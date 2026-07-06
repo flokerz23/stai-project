@@ -1,0 +1,21 @@
+# Python compilation files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Jupyter notebooks cache
+.ipynb_checkpoints/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STAI</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="An interactive NLP dashboard demonstrating sarcasm and irony detection on SemEval-2018 Task 3 with local word-level explainability.">
+  <!-- Chart.js for visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header Section -->
+  <header>
+    <div class="logo-container">
+      <div class="title-group">
+        <h1 class="logo-title"></h1>
+      </div>
+    </div>
+    <div class="header-meta">
+      Task: SemEval-2018 Task 3 (Task A)
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <main class="main-container">
+    
+    <!-- Left Panel: Interactive Predictor -->
+    <section class="glass-card">
+      <h2 class="card-title sarcastic-title">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        Sarcasm Predictor & Explainer
+      </h2>
+      
+      <!-- Model Selection Dropdown -->
+      <div class="input-group">
+        <label for="model-select" class="input-label">Classification Model:</label>
+        <select id="model-select" class="select-dropdown">
+          <option value="lr" selected>Logistic Regression (Interpretable Linear)</option>
+          <option value="svm">Linear SVM (High Margin Classifier)</option>
+          <option value="nb">Multinomial Naive Bayes (Probabilistic Likelihood)</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="text-input" class="input-label">Enter tweet or short sentence:</label>
+        <textarea id="text-input" placeholder="Type something sarcastic or literal here... (e.g. 'Oh great, another delay!')"></textarea>
+      </div>
+
+
+
+      <button id="analyze-btn" class="btn-primary">
+        <span id="btn-spinner" class="spinner" style="display: none;"></span>
+        <span id="btn-text">Analyze Text</span>
+      </button>
+
+      <!-- Prediction Output Result -->
+      <div id="results-wrapper" class="results-wrapper">
+        <div class="gauge-container">
+          <svg class="gauge-circle" width="120" height="120" viewBox="0 0 100 100">
+            <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+            <circle id="gauge-fill" class="gauge-fill" cx="50" cy="50" r="40"></circle>
+          </svg>
+          <div id="gauge-val" class="gauge-percentage">0%</div>
+        </div>
+        <div class="verdict-info">
+          <div id="verdict-badge" class="verdict-badge">Verdict Pending</div>
+          <p id="verdict-desc" class="verdict-desc">Submit a text to see the sarcasm probability and predictions from the model.</p>
+        </div>
+      </div>
+
+      <!-- Local Explainability Output -->
+      <div id="explain-section" class="explain-section">
+        <span class="input-label">Local Feature Contribution (Explainability Map)</span>
+        <div id="token-map" class="token-map">
+          <span style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">No explanation generated yet. Enter text above to map word contributions.</span>
+        </div>
+        <div class="legend-container">
+          <div class="legend-items">
+            <div class="legend-item">
+              <span class="legend-color sarcastic-indicator"></span>
+              <span>Sarcastic Weight (Positive)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color literal-indicator"></span>
+              <span>Literal Weight (Negative)</span>
+            </div>
+          </div>
+          <span>Hover words for detailed NLP weights</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Diagnostics & Corpus Insights -->
+    <section class="glass-card">
+      <!-- Tabs Header -->
+      <div class="tabs-header">
+        <button class="tab-btn active" data-tab="performance">Model Performance</button>
+        <button class="tab-btn" data-tab="vocabulary">Feature Importances</button>
+        <button class="tab-btn" data-tab="explorer">Dataset Explorer</button>
+      </div>
+
+      <!-- Tab Content 1: Model Diagnostics -->
+      <div id="performance-tab" class="tab-content active">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span id="metric-acc" class="metric-val">0.0%</span>
+            <span class="metric-lbl">Accuracy</span>
+          </div>
+          <div class="metric-card">
+            <span id="metric-prec" class="metric-val">0.0%</span>
+            <span class="metric-lbl">Precision</span>
+          </div>
+          <div class="metric-card">
+            <span id="metric-rec" class="metric-val">0.0%</span>
+            <span class="metric-lbl">Recall</span>
+          </div>
+          <div class="metric-card">
+            <span id="metric-f1" class="metric-val">0.0%</span>
+            <span class="metric-lbl">F1 Score</span>
+          </div>
+        </div>
+
+        <div class="matrix-wrapper">
+          <div class="input-label" style="writing-mode: vertical-lr; transform: rotate(180deg); padding-right: 0.5rem;">Confusion Matrix</div>
+          <div class="matrix-grid">
+            <div class="matrix-cell tn">
+              <span class="matrix-cell-desc">Literal classified as Literal</span>
+              <span id="cm-tn" class="matrix-cell-val">0</span>
+              <span class="matrix-cell-lbl">True Negative</span>
+            </div>
+            <div class="matrix-cell tp" style="background: rgba(255, 143, 0, 0.02);">
+              <span class="matrix-cell-desc">Literal classified as Sarcastic</span>
+              <span id="cm-fp" class="matrix-cell-val">0</span>
+              <span class="matrix-cell-lbl">False Positive</span>
+            </div>
+            <div class="matrix-cell tn" style="background: rgba(98, 0, 234, 0.02);">
+              <span class="matrix-cell-desc">Sarcastic classified as Literal</span>
+              <span id="cm-fn" class="matrix-cell-val">0</span>
+              <span class="matrix-cell-lbl">False Negative</span>
+            </div>
+            <div class="matrix-cell tp">
+              <span class="matrix-cell-desc">Sarcastic classified as Sarcastic</span>
+              <span id="cm-tp" class="matrix-cell-val">0</span>
+              <span class="matrix-cell-lbl">True Positive</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content 2: Feature Weights (Vocabulary) -->
+      <div id="vocabulary-tab" class="tab-content">
+        <div class="chart-container" style="height: 280px;">
+          <canvas id="featuresChart"></canvas>
+        </div>
+        
+        <div class="vocabulary-split">
+          <div class="vocab-list-container">
+            <div class="vocab-list-title sarcastic-vocab">Top Sarcastic Features</div>
+            <div id="sarcastic-vocab-list" class="vocab-items">
+              <!-- JS filled -->
+            </div>
+          </div>
+          <div class="vocab-list-container">
+            <div class="vocab-list-title literal-vocab">Top Literal Features</div>
+            <div id="literal-vocab-list" class="vocab-items">
+              <!-- JS filled -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content 3: Dataset Explorer -->
+      <div id="explorer-tab" class="tab-content">
+        <div class="explorer-overview">
+          <h3 class="input-label" style="margin-bottom: 0.25rem;">SemEval-2018 Task 3 Overview</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1rem;">
+            Explore the Twitter dataset annotated for binary irony (sarcasm vs. literal). Type a keyword to search, filter by label, or click a tweet card to load it directly into the predictor model!
+          </p>
+        </div>
+
+        <div class="explorer-controls">
+          <div class="search-box">
+            <input type="text" id="explorer-search" placeholder="Search tweets (e.g. 'delay', 'weather')...">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+          </div>
+          
+          <div class="filter-row">
+            <div class="filter-group">
+              <label for="explorer-split">Split</label>
+              <select id="explorer-split" class="select-dropdown small">
+                <option value="train">Training Set (3,817)</option>
+                <option value="test">Test Set (784)</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label for="explorer-label">Label</label>
+              <select id="explorer-label" class="select-dropdown small">
+                <option value="all">All Labels</option>
+                <option value="1">Sarcastic (1)</option>
+                <option value="0">Literal (0)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tweet-list-wrapper">
+          <div id="tweet-list" class="tweet-list">
+            <!-- Dynamically filled with tweet cards -->
+            <div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem;">Loading tweets...</div>
+          </div>
+          
+          <div class="pagination-container">
+            <button id="explorer-prev-btn" class="btn-secondary" disabled>Previous</button>
+            <span id="explorer-page-info">Showing 0-0 of 0</span>
+            <button id="explorer-next-btn" class="btn-secondary" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
